@@ -1,0 +1,305 @@
+<!doctype html>
+<html>
+	<head>
+		<title>learningthree.js boiler plate for three.js</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		
+			
+		<script src="static/js/threejs/three.js"></script>
+		<script src="static/js/examples/Detector.js"></script>
+		<!-- https://github.com/mrdoob/stats.js -->
+		<!-- <script src="static/js/vendor/three.js/Stats.js"></script> -->
+
+		<script src="static/js/vendor/threex/THREEx.screenshot.js"></script>
+		<script src="static/js/vendor/threex/THREEx.FullScreen.js"></script>
+		<script src="static/js/vendor/threex/THREEx.WindowResize.js"></script>
+		
+		<script src="static/js/examples/loaders/OBJLoader.js"></script>
+		<script src="static/js/examples/controls/TrackballControls.js"></script>
+		
+		<link  href="static/css/main.css" rel="stylesheet"/>
+	</head>
+<body>
+	<!-- three.js container -->
+	<button onclick="myFunction()">Click me</button>
+    <div id="container"></div>
+    <!-- Refer: https://jeromeetienne.github.io/threejsboilerplatebuilder/ -->
+	<!-- info on screen display -->
+	<!--
+	<div id="info">
+		<div class="top">
+			<a href="http://learningthreejs.com/blog/2011/12/20/boilerplate-for-three-js/" target="_blank">LearningThree.js</a>
+			boiler plate for
+			<a href="https://github.com/mrdoob/three.js/" target="_blank">three.js</a>
+		</div>
+		<div class="bottom" id="inlineDoc" >
+			- <i>p</i> for screenshot
+		</div> 
+	</div> 
+	-->
+
+	<script type="text/javascript">
+		var stats;
+		
+		var gScene;
+		var gRenderer;
+		var gCamera;
+		var gCameraControls;
+		var gMaterial;
+		
+		var gPromises;
+		
+		const gTextureKeys = ['map', 'normalMap'];
+		
+		var obj1;
+		var obj2;
+		
+		const trialModel = {
+			geometry: {
+				url: '/static/gallery/obj1/obj/trial.obj'
+			},
+			material: {
+				map: '/static/gallery/obj1/tex/trial_texture.png',
+				normalMap: '/static/gallery/obj1/tex/trial_normal.png',
+				metalness: 0.5,
+				roughness: 0.5,
+				flatShading: false,
+				side: THREE.FrontSide,
+			}
+		};
+		
+		const trialModel2 = {
+			geometry: {
+				url: '/static/gallery/obj2/obj/trial.obj'
+			},
+			material: {
+				map: '/static/gallery/obj2/tex/trial_texture.png',
+				normalMap: '/static/gallery/obj2/tex/trial_normal.png',
+				metalness: 0.5,
+				roughness: 0.5,
+				flatShading: false,
+				side: THREE.FrontSide,
+			}
+		};
+		
+		const sceneModels = {
+			'trial' : trialModel
+		};
+		
+		const sceneModels_onDemand = {
+			'trial2' : trialModel2
+		};
+
+		function loadCamera()
+		{
+			// put a gCamera in the scene
+			gCamera	= new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 10000 );
+			gCamera.position.set(0, 0, 5);
+			gScene.add(gCamera);
+
+			// create a gCamera contol
+			gCameraControls	= new THREE.TrackballControls(gCamera);
+
+			// transparently support window resize
+			THREEx.WindowResize.bind(gRenderer, gCamera);
+		}
+
+		// render the scene
+		function render() 
+		{
+			// actually render the scene
+			gRenderer.render( gScene, gCamera );
+		}
+		
+		var SPEED = 0.01;
+		// animation loop
+		function animate() 
+		{
+			// update gCamera controls
+			gCameraControls.update();
+
+			// do the render
+			render();
+			
+			requestAnimationFrame( animate );
+			
+			// update stats
+			//stats.update();
+			
+			if(null != obj2)
+			{
+				//console.log('rotating');
+				obj2.rotation.x -= SPEED * 2;
+				obj2.rotation.y -= SPEED;
+				obj2.rotation.z -= SPEED * 3;
+			}
+		}
+		
+		function loadLights()
+		{
+			var light;
+			
+			light = new THREE.AmbientLight( 0xffffff );
+			gScene.add(light);
+			
+			light= new THREE.DirectionalLight(0xffffff, 0.625);
+			light.position.set(1,0,1).normalize();
+			gScene.add(light);
+			
+			light = new THREE.DirectionalLight(0xffffff, 0.125);
+			light.position.set(-1,0,-1).normalize();
+			gScene.add(light);
+		}
+		
+		function loadTexture(url) 
+		{
+			return new Promise(resolve => {
+				new THREE.TextureLoader().load(url, resolve);
+			});
+		}
+		
+		function loadMaterial(oMaterial) {
+			const params = {};
+
+			const promises = Object.keys(oMaterial).map( sampleTextureKey => {
+				
+				// load textures for supported keys
+				if (gTextureKeys.indexOf(sampleTextureKey) !== -1) {
+					return loadTexture(oMaterial[sampleTextureKey]).then(texture => {
+						params[sampleTextureKey] = texture;
+					});
+				} 
+				else {
+					// just copy the value otherwise 
+					params[sampleTextureKey] = oMaterial[sampleTextureKey];
+				}
+				
+			});
+
+			return Promise.all(promises).then(() => {
+				return new THREE.MeshStandardMaterial(params);
+			});
+		}
+		
+		function loadMeshAsset(oGeometry)  {
+			return new Promise((resolve, reject) => {
+				const objLoader = new THREE.OBJLoader();
+				objLoader.load(oGeometry.url, loadedObject => resolve(loadedObject), undefined, xhrError => reject(xhrError));
+			});
+		}
+		
+		function loadModel(oModels, oModelKey) {
+			
+			sampleModel = oModels[oModelKey];
+			
+			const promises = [
+				loadMeshAsset(sampleModel.geometry),
+				loadMaterial(sampleModel.material)
+			];
+			
+			return Promise.all(promises).then(result => {
+				var oSampleMesh = result[0];
+				var oMaterial = result[1];
+				
+				oSampleMesh.name = oModelKey;
+				
+				oSampleMesh.material = oMaterial;
+				
+				oSampleMesh.traverse( function ( child ) {
+					if ( child instanceof THREE.Mesh ) {
+						child.material = oMaterial;
+					}
+				});
+								
+				return oSampleMesh;
+			});
+		}
+		
+		// init the scene
+		function init() 
+		{ 
+			if( Detector.webgl ){
+				gRenderer = new THREE.WebGLRenderer({
+						antialias		: true,	// to get smoother output
+						preserveDrawingBuffer	: true	// to allow screenshot
+					});					
+				gRenderer.setClearColor( 0xE0E0E0 ); 
+			} 
+			else {
+				Detector.addGetWebGLMessage();
+				return true;
+			}
+			
+			gRenderer.setSize( window.innerWidth, window.innerHeight );
+			document.getElementById('container').appendChild(gRenderer.domElement);
+
+			// add Stats.js - https://github.com/mrdoob/stats.js
+			/*
+			stats = new Stats();
+			stats.domElement.style.position	= 'absolute';
+			stats.domElement.style.bottom	= '0px';
+			document.body.appendChild( stats.domElement );
+			*/
+
+			// create a scene
+			gScene = new THREE.Scene();
+			
+			// allow 'p' to make screenshot
+			//THREEx.Screenshot.bindKey(gRenderer);
+			
+			/*
+			// allow 'f' to go fullscreen where this feature is supported
+			if( THREEx.FullScreen.available() ){
+				THREEx.FullScreen.bindKey();		
+				document.getElementById('inlineDoc').innerHTML	+= "- <i>f</i> for fullscreen";
+			}*/
+			
+			loadCamera();
+			
+			loadLights();
+			
+			gPromises = Object.keys(sceneModels).map( sampleModelKey => {
+				return loadModel(sceneModels, sampleModelKey).then( sampleMeshAsset => {
+					//console.log(sampleMeshAsset);
+					gScene.add(sampleMeshAsset);
+				});
+			});
+			
+			Promise.all(gPromises).then(() => {
+				console.log('loaded automatically');
+				
+				obj1 = gScene.getObjectByName("trial");
+				//obj1.position.set(new THREE.Vector3( 0, 1, 0));
+				//obj1.rotation.set(new THREE.Vector3( 0, 0, Math.PI / 4));
+				gCameraControls.target = obj1.position;
+				
+				//render();
+				animate();
+			});		
+		}
+		
+		function myFunction() {
+			gPromises = Object.keys(sceneModels_onDemand).map( sampleModelKey => {
+				return loadModel(sceneModels_onDemand, sampleModelKey).then( sampleMeshAsset => {
+					//console.log(sampleMeshAsset);
+					gScene.add(sampleMeshAsset);
+				});
+			});
+			
+			Promise.all(gPromises).then(() => {
+				console.log('loaded on demand');
+				
+				obj2 = gScene.getObjectByName("trial2");
+				//obj2.position.set(new THREE.Vector3( 1, 0, 1));
+				obj2.rotation.set(new THREE.Vector3( 0, 0, Math.PI / 4));
+				
+				//render();
+			});	
+		}
+		
+		init();
+		
+	</script>
+</body>
+</html>
