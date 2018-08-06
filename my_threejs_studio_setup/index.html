@@ -87,11 +87,11 @@
 			}
 		};
 		
-		const sceneModels = {
+		const sceneModels1 = {
 			'trial' : trialModel
 		};
 		
-		const sceneModels_onDemand = {
+		const sceneModels2 = {
 			'trial2' : trialModel2
 		};
 
@@ -191,6 +191,18 @@
 			});
 		}
 		
+		function loadModelsOnDemand(dictInputModels, cbOnLoaded) {
+			gPromises = Object.keys(dictInputModels).map( sampleModelKey => {
+				return loadModel(dictInputModels, sampleModelKey).then( sampleMeshAsset => {
+					gScene.add(sampleMeshAsset);
+				});
+			});
+			
+			Promise.all(gPromises).then(() => {
+				cbOnLoaded();
+			});	
+		}
+		
 		function loadModel(oModels, oModelKey) {
 			
 			sampleModel = oModels[oModelKey];
@@ -216,6 +228,26 @@
 								
 				return oSampleMesh;
 			});
+		}
+		
+		function onLoadComplete_sm1()
+		{
+			console.log('loaded automatically');
+			
+			obj1 = gScene.getObjectByName("trial");
+			obj1.position.set( 1, 0, 0);
+			gCameraControls.target = new THREE.Vector3( 0, 0, 0);
+			
+			//render();
+			animate();
+		}
+		
+		function onLoadComplete_sm2()
+		{
+			console.log('loaded on demand');
+			
+			obj2 = gScene.getObjectByName("trial2");
+			obj2.position.set( -1, 0, 0);
 		}
 		
 		// init the scene
@@ -261,42 +293,11 @@
 			
 			loadLights();
 			
-			gPromises = Object.keys(sceneModels).map( sampleModelKey => {
-				return loadModel(sceneModels, sampleModelKey).then( sampleMeshAsset => {
-					//console.log(sampleMeshAsset);
-					gScene.add(sampleMeshAsset);
-				});
-			});
-			
-			Promise.all(gPromises).then(() => {
-				console.log('loaded automatically');
-				
-				obj1 = gScene.getObjectByName("trial");
-				obj1.position.set( 1, 0, 0);
-				gCameraControls.target = new THREE.Vector3( 0, 0, 0);
-				
-				//render();
-				animate();
-			});		
+			loadModelsOnDemand(sceneModels1, onLoadComplete_sm1);	
 		}
 		
 		function myFunction() {
-			gPromises = Object.keys(sceneModels_onDemand).map( sampleModelKey => {
-				return loadModel(sceneModels_onDemand, sampleModelKey).then( sampleMeshAsset => {
-					//console.log(sampleMeshAsset);
-					gScene.add(sampleMeshAsset);
-				});
-			});
-			
-			Promise.all(gPromises).then(() => {
-				console.log('loaded on demand');
-				
-				obj2 = gScene.getObjectByName("trial2");
-				obj2.position.set( -1, 0, 0);
-				
-				//render();
-				//animate();
-			});	
+			loadModelsOnDemand(sceneModels2, onLoadComplete_sm2);
 		}
 		
 		init();
