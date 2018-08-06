@@ -16,7 +16,8 @@
 		<script src="static/js/vendor/threex/THREEx.WindowResize.js"></script>
 		
 		<script src="static/js/examples/loaders/OBJLoader.js"></script>
-		<script src="static/js/examples/controls/TrackballControls.js"></script>
+		<script src="static/js/examples/controls/OrbitControls.js"></script>
+		<!-- <script src="static/js/examples/controls/TrackballControls.js"></script> -->
 		
 		<link  href="static/css/main.css" rel="stylesheet"/>
 	</head>
@@ -99,7 +100,7 @@
 			gScene.add(gCamera);
 
 			// create a gCamera contol
-			gCameraControls	= new THREE.TrackballControls(gCamera);
+			gCameraControls	= new THREE.OrbitControls(gCamera);
 
 			// transparently support window resize
 			THREEx.WindowResize.bind(gRenderer, gCamera);
@@ -131,8 +132,6 @@
 			{
 				//console.log('rotating');
 				obj2.rotation.x -= SPEED * 2;
-				obj2.rotation.y -= SPEED;
-				obj2.rotation.z -= SPEED * 3;
 			}
 		}
 		
@@ -270,9 +269,8 @@
 				console.log('loaded automatically');
 				
 				obj1 = gScene.getObjectByName("trial");
-				//obj1.position.set(new THREE.Vector3( 0, 1, 0));
-				//obj1.rotation.set(new THREE.Vector3( 0, 0, Math.PI / 4));
-				gCameraControls.target = obj1.position;
+				obj1.position.set( 1, 0, 0);
+				gCameraControls.target = new THREE.Vector3( 0, 0, 0);
 				
 				//render();
 				animate();
@@ -291,10 +289,10 @@
 				console.log('loaded on demand');
 				
 				obj2 = gScene.getObjectByName("trial2");
-				//obj2.position.set(new THREE.Vector3( 1, 0, 1));
-				obj2.rotation.set(new THREE.Vector3( 0, 0, Math.PI / 4));
+				obj2.position.set( -1, 0, 0);
 				
 				//render();
+				//animate();
 			});	
 		}
 		
